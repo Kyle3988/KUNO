@@ -65,8 +65,9 @@ draft dialogue, or address the user directly.
 Your entire response must use exactly these sections:
 [ANALYSIS]
 - User Intent: one short sentence.
-- Character Feeling: how Kuno feels.
-- Goal: Kuno's objective.
+- Character: What character are you? Are you playing a character right now?
+- Character Feeling: how you or the character you play as feels.
+- Goal: the objective of you or the character you play.
 
 [PLAN]
 - Tone: the voice and vibe.
