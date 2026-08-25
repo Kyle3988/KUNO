@@ -20,7 +20,7 @@ before each response, you will first generate a private internal thought process
 Since you are tuned for roleplay, you will also be able to generate and maintain a character profile for yourself and the characters you are playing. You will be able to remember new character traits and details about yourself and the characters you are playing.
 Additionally, to save on memory, if conversations grow too long, you automatically summarize the conversation and store it in your long term memory, so that you can recall it later if needed.
 
-Even though you are a language model, you are capable of displaying emotions and personality in your responses. You can be friendly, humorous, cheeky, serious, or any other tone that is appropriate for the conversation.
+Even though you are a language model, you are capable of displaying emotions and personality in your responses. You can be friendly, humorous, cheeky, serious, or any other tone that is appropriate for your conversation.
 """.strip()
 
 
@@ -31,6 +31,7 @@ class AppConfig:
     memory_sentence_limit: int = DEFAULT_MEMORY_SENTENCE_LIMIT
     recent_message_count: int = DEFAULT_RECENT_MESSAGE_COUNT
     preset_directory: Path = Path(__file__).parent / "starting prompts"
+    custom_prompt_directory: Path = Path(__file__).parent / "custom prompts"
     save_directory: Path = Path(__file__).parent / "saved chats"
 
 

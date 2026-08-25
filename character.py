@@ -4,8 +4,9 @@ import asyncio
 from typing import TYPE_CHECKING
 
 from agents import create_agents
-from config import DEFAULT_CHARACTER_PROMPT, DEFAULT_CONFIG, AppConfig
+from config import DEFAULT_CONFIG, AppConfig
 from models import AgentModels, ChatSession, LongTermMemory, Message
+from presets import StartingPromptLoader
 
 if TYPE_CHECKING:
     from UIBridge import UIBridge
@@ -33,15 +34,22 @@ class Character:
                 memory_sentence_limit=config.memory_sentence_limit,
                 recent_message_count=config.recent_message_count,
                 preset_directory=config.preset_directory,
+                custom_prompt_directory=config.custom_prompt_directory,
                 save_directory=config.save_directory,
             )
             self.config = config
-        self.session = session or ChatSession(
-            title="New chat",
-            character_prompt=DEFAULT_CHARACTER_PROMPT + "\n\nFollowing are recorded character traits about yourself/the characters you are playing, if any:\n",
-            agent_models=config.agent_models,
-            starting_prompt_name="Kuno default",
-        )
+        if session is None:
+            default_prompt = StartingPromptLoader(
+                config.preset_directory,
+                config.custom_prompt_directory,
+            ).list_presets()[0].content
+            session = ChatSession(
+                title="New chat",
+                character_prompt=default_prompt + "\n\nFollowing are recorded character traits about yourself/the characters you are playing, if any:\n",
+                agent_models=config.agent_models,
+                starting_prompt_name="Kuno default",
+            )
+        self.session = session
         if self.session.agent_models is None:
             self.session.agent_models = config.agent_models
         self.agents = create_agents(self.session.agent_models)

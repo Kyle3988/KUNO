@@ -49,7 +49,7 @@ ollama stop qwen3:8b
 ### Chats and starting prompts
 Chats are saved explicitly with the **Save** button. Each chat is stored as a readable JSON file named after its title in the local `saved chats/` directory. Titles are sanitized for filesystem use. Saving another chat with the same title silently replaces the previous file. The file includes the conversation, long-term memories, character profile, starting prompt, and agent model assignments.
 
-When creating a chat, **Custom** is selected by default and accepts any starting prompt. Additional presets are plain `.md` files in `starting prompts/`; the existing Kuno character prompt is the built-in default preset. The selected prompt becomes the chat's initial system character context and is restored when the chat is loaded.
+When creating a chat, **Kuno default** is selected by default and is loaded from `starting prompts/Kuno default.md`. Select a prompt from the dropdown and edit its content as needed. **Save Prompt** is enabled only after the prompt content changes, then opens a popup for the prompt name. The popup is prefilled for an existing starting or custom prompt, but blank for unsaved **Custom**. A new name is saved as a `.md` file in `custom prompts/`; saving an existing custom name updates that file. Starting and custom prompts with the same name are shown with source labels. The selected prompt becomes the chat's initial system character context and is restored when the chat is loaded.
 
 The active Textual theme is remembered between launches in `.kuno-settings.json` beside the configured chat directory.
 
