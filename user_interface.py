@@ -5,10 +5,11 @@ import re
 import time
 from pathlib import Path
 
+from agents import validate_models
 from character import Character
 from chat_storage import ChatStorage
 from config import DEFAULT_CONFIG, AppConfig
-from models import AgentModels, ChatSession
+from models import AgentModels, AgentSetting, ChatSession
 from presets import StartingPrompt, StartingPromptLoader
 from UIBridge import UIBridge
 
@@ -106,6 +107,13 @@ class MenuScreen(Screen):
 
 
 class PromptSetupScreen(Screen):
+    AGENT_FIELDS = (
+        ("thinking", "Thinking model", False),
+        ("speaking", "Speaking model", True),
+        ("character_development", "Character development model", False),
+        ("memory", "Memory compression model", False),
+    )
+
     def __init__(self, app_config: AppConfig):
         super().__init__()
         self.app_config = app_config
@@ -139,9 +147,34 @@ class PromptSetupScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         yield Label("Start a new chat", id="prompt-title")
-        yield Label("Choose or search for a starting prompt.")
-        yield Select(self.prompt_options, value="starting:Kuno default", id="prompt-select")
-        yield TextArea(id="starting-prompt")
+        with VerticalScroll(id="prompt-content"):
+            yield Label("Choose or search for a starting prompt.")
+            yield Select(self.prompt_options, value="starting:Kuno default", id="prompt-select")
+            yield TextArea(id="starting-prompt")
+            with Collapsible(title="Advanced settings", collapsed=True, id="advanced-settings"):
+                yield Label("Configure the models used by this chat.")
+                for field_name, label, required in self.AGENT_FIELDS:
+                    setting = getattr(self.app_config.agent_models, field_name)
+                    yield Label(
+                        f"{label} (required)" if required else label,
+                        classes="agent-setting-label",
+                    )
+                    with Horizontal(classes="agent-setting-row"):
+                        if not required:
+                            yield Button(
+                                "Enabled" if setting.enabled else "Disabled",
+                                id=f"{field_name}-enabled",
+                                classes=(
+                                    "agent-enabled-toggle is-enabled"
+                                    if setting.enabled
+                                    else "agent-enabled-toggle is-disabled"
+                                ),
+                            )
+                        yield Input(
+                            setting.model,
+                            placeholder="Ollama model name",
+                            id=f"{field_name}-model",
+                        )
         with Horizontal(id="prompt-actions"):
             yield Button("Save Prompt", variant="success", id="save-prompt", disabled=True)
             yield Button("Start Chat", variant="primary", id="start-chat")
@@ -170,6 +203,12 @@ class PromptSetupScreen(Screen):
             self._update_save_state()
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id and event.button.id.endswith("-enabled"):
+            enabled = not event.button.has_class("is-enabled")
+            event.button.label = "Enabled" if enabled else "Disabled"
+            event.button.set_class(enabled, "is-enabled")
+            event.button.set_class(not enabled, "is-disabled")
+            return
         if event.button.id == "back-menu":
             self.app.pop_screen()
             return
@@ -189,13 +228,40 @@ class PromptSetupScreen(Screen):
             prompt_name = self.prompt_by_key[selected_key].name
         else:
             prompt_name = "Custom"
+        agent_models = self._get_agent_models()
+        if not agent_models.speaking.enabled:
+            self.app.notify("The speaking agent must be enabled.", severity="warning")
+            return
+        try:
+            unavailable = await validate_models(agent_models)
+        except Exception as error:
+            self.app.notify(f"Could not validate Ollama models: {error}", severity="error")
+            return
+        if unavailable:
+            self.app.notify("Unavailable models: " + "; ".join(unavailable), severity="error")
+            return
         session = ChatSession(
             title="New chat",
             character_prompt=prompt,
             starting_prompt_name=prompt_name,
-            agent_models=self.app_config.agent_models,
+            agent_models=agent_models,
         )
         self.app.push_screen(ChatScreen(session, self.app_config))
+
+    def _get_agent_models(self) -> AgentModels:
+        settings = {}
+        for field_name, _, required in self.AGENT_FIELDS:
+            settings[field_name] = AgentSetting(
+                model=self.query_one(f"#{field_name}-model", Input).value.strip(),
+                enabled=(
+                    True
+                    if required
+                        else self.query_one(f"#{field_name}-enabled", Button).has_class(
+                            "is-enabled"
+                        )
+                ),
+            )
+        return AgentModels(**settings)
 
     def open_save_prompt(self) -> None:
         selected_key = str(self.query_one("#prompt-select", Select).value)
@@ -567,10 +633,69 @@ class UserInterface(App):
         margin: 0 2 1 2;
     }
     #starting-prompt {
-        height: 1fr;
+        height: 18;
         width: 1fr;
         margin: 0 2 1 2;
         border: round $panel;
+    }
+    #prompt-content {
+        height: 1fr;
+        width: 100%;
+        padding: 0 2;
+    }
+    #prompt-content > Select {
+        width: 100%;
+        margin: 0 0 1 0;
+    }
+    #prompt-content > TextArea {
+        width: 100%;
+        margin: 0 0 1 0;
+    }
+    #advanced-settings {
+        width: 100%;
+        margin: 1 0;
+        padding: 1 2;
+        border: round $panel;
+        background: $surface;
+    }
+    #advanced-settings > Label {
+        color: $text-muted;
+        margin-bottom: 1;
+    }
+    .agent-setting-label {
+        margin-top: 1;
+        color: $accent;
+        text-style: bold;
+    }
+    .agent-setting-row {
+        width: 100%;
+        height: 3;
+        align: left middle;
+    }
+    .agent-setting-row Input {
+        width: 1fr;
+        height: 3;
+        border: round $panel;
+        background: $panel-darken-1;
+    }
+    .agent-enabled-toggle {
+        width: 12;
+        min-width: 12;
+        height: 3;
+        margin-right: 1;
+        text-style: bold;
+        border: round $panel;
+        background: $panel-darken-1;
+        color: $text-muted;
+    }
+    .agent-enabled-toggle.is-enabled {
+        border: round $success;
+        background: $success;
+        color: $text;
+    }
+    .agent-enabled-toggle.is-disabled {
+        border: round $warning;
+        color: $warning;
     }
     """
 

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from models import AgentModels
+from models import AgentModels, AgentSetting
 
 
 DEFAULT_SPEAKING_MODEL = "llama3.1:8b"
@@ -37,9 +37,9 @@ class AppConfig:
 
 DEFAULT_CONFIG = AppConfig(
     agent_models=AgentModels(
-        thinking=DEFAULT_THINKING_MODEL,
-        speaking=DEFAULT_SPEAKING_MODEL,
-        character_development=DEFAULT_THINKING_MODEL,
-        memory=DEFAULT_THINKING_MODEL,
+        thinking=AgentSetting(DEFAULT_THINKING_MODEL),
+        speaking=AgentSetting(DEFAULT_SPEAKING_MODEL),
+        character_development=AgentSetting(DEFAULT_THINKING_MODEL),
+        memory=AgentSetting(DEFAULT_THINKING_MODEL),
     )
 )

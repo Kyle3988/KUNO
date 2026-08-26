@@ -20,13 +20,36 @@ class LongTermMemory:
 
 
 @dataclass
-class AgentModels:
-    thinking: str
-    speaking: str
-    character_development: str
-    memory: str
+class AgentSetting:
+    model: str
+    enabled: bool = True
 
-    def to_dict(self) -> dict[str, str]:
+    @classmethod
+    def from_value(cls, value: Any) -> AgentSetting:
+        if isinstance(value, cls):
+            return value
+        if isinstance(value, str):
+            return cls(model=value, enabled=bool(value.strip()))
+        if isinstance(value, dict):
+            model = str(value.get("model", value.get("model_name", "")))
+            return cls(model=model, enabled=bool(value.get("enabled", bool(model.strip()))))
+        return cls(model="", enabled=False)
+
+
+@dataclass
+class AgentModels:
+    thinking: AgentSetting | str
+    speaking: AgentSetting | str
+    character_development: AgentSetting | str
+    memory: AgentSetting | str
+
+    def __post_init__(self) -> None:
+        self.thinking = AgentSetting.from_value(self.thinking)
+        self.speaking = AgentSetting.from_value(self.speaking)
+        self.character_development = AgentSetting.from_value(self.character_development)
+        self.memory = AgentSetting.from_value(self.memory)
+
+    def to_dict(self) -> dict[str, dict[str, Any]]:
         return asdict(self)
 
 

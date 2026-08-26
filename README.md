@@ -35,6 +35,8 @@ python3 main.py
 
 Kuno opens at a start menu. Choose **New Chat** to select a starting prompt, or choose a saved chat and load it.
 
+When creating a new chat, expand **Advanced settings** below the prompt editor to choose a model for each agent and disable optional agents. Speaking must remain enabled; thinking, character development, and memory can be disabled independently. Before the chat opens, Kuno checks that every enabled model is available to the local Ollama service. Ollama may load an available model when it is first used.
+
 ---
 
 ### Close Kuno
@@ -56,7 +58,7 @@ The active Textual theme is remembered between launches in `.kuno-settings.json`
 ---
 
 ### Developer configuration
-Per-agent models and memory settings are defined in `config.py`. The agents currently configured are thinking, speaking, character development, and memory compression. The memory agent is triggered when the estimated conversation token count exceeds `DEFAULT_MEMORY_TOKEN_THRESHOLD` and writes a concise summary of no more than three sentences.
+Default per-agent models and memory settings are defined in `config.py`. New chats can override these model assignments in Advanced settings, and the selected assignments are saved with the chat. The agents currently configured are thinking, speaking, character development, and memory compression. The memory agent is triggered when the estimated conversation token count exceeds `DEFAULT_MEMORY_TOKEN_THRESHOLD` and writes a concise summary of no more than three sentences.
 
 ---
   

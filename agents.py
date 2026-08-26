@@ -47,6 +47,37 @@ class Agent:
         return cleaned.strip()
 
 
+async def available_models(client: Any | None = None) -> set[str]:
+    if client is None:
+        if ollama is None:
+            raise RuntimeError("The ollama package is required for model validation.")
+        client = ollama.AsyncClient()
+    response = await client.list()
+    models = response.get("models", []) if isinstance(response, dict) else getattr(response, "models", [])
+    names: set[str] = set()
+    for model in models:
+        if isinstance(model, str):
+            names.add(model)
+        elif isinstance(model, dict):
+            name = model.get("name") or model.get("model")
+            if name:
+                names.add(str(name))
+        else:
+            name = getattr(model, "model", None) or getattr(model, "name", None)
+            if name:
+                names.add(str(name))
+    return names
+
+
+async def validate_models(models: AgentModels, client: Any | None = None) -> list[str]:
+    available = await available_models(client)
+    errors: list[str] = []
+    for agent_name, setting in vars(models).items():
+        if setting.enabled and setting.model not in available:
+            errors.append(f"{agent_name.replace('_', ' ').title()}: {setting.model}")
+    return errors
+
+
 class ThinkingAgent(Agent):
     phase = "thinking"
 
@@ -188,11 +219,16 @@ Conversation:
 
 
 def create_agents(models: AgentModels, client: Any | None = None) -> dict[str, Agent]:
+    agent_types = {
+        "thinking": ThinkingAgent,
+        "speaking": SpeakingAgent,
+        "character_development": CharacterDevelopmentAgent,
+        "memory": MemoryCompressionAgent,
+    }
     return {
-        "thinking": ThinkingAgent(models.thinking, client),
-        "speaking": SpeakingAgent(models.speaking, client),
-        "character_development": CharacterDevelopmentAgent(models.character_development, client),
-        "memory": MemoryCompressionAgent(models.memory, client),
+        name: agent_type(getattr(models, name).model, client)
+        for name, agent_type in agent_types.items()
+        if getattr(models, name).enabled
     }
 
 

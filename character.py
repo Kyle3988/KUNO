@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from agents import create_agents
 from config import DEFAULT_CONFIG, AppConfig
-from models import AgentModels, ChatSession, LongTermMemory, Message
+from models import AgentModels, AgentSetting, ChatSession, LongTermMemory, Message
 from presets import StartingPromptLoader
 
 if TYPE_CHECKING:
@@ -25,8 +25,8 @@ class Character:
         if model_name:
             config = AppConfig(
                 agent_models=AgentModels(
-                    thinking=model_name,
-                    speaking=model_name,
+                    thinking=AgentSetting(model_name),
+                    speaking=AgentSetting(model_name),
                     character_development=config.agent_models.character_development,
                     memory=config.agent_models.memory,
                 ),
@@ -76,13 +76,15 @@ class Character:
             await self._maybe_compress_memory(ui)
             model_history = self._history_for_model()
 
-            thoughts = await self.agents["thinking"].run(
-                model_history,
-                self.character,
-                self._memory_prompt(),
-                ui.on_agent_chunk,
-            )
-            await ui.on_phase_complete()
+            thoughts = ""
+            if "thinking" in self.agents:
+                thoughts = await self.agents["thinking"].run(
+                    model_history,
+                    self.character,
+                    self._memory_prompt(),
+                    ui.on_agent_chunk,
+                )
+                await ui.on_phase_complete()
 
             reply = await self.agents["speaking"].run(
                 model_history,
@@ -94,13 +96,14 @@ class Character:
             await ui.on_phase_complete()
             self.session.messages.append(Message("assistant", reply))
 
-            character_note = await self.agents["character_development"].run(
-                model_history, self.character, user_input, thoughts, reply
-            )
-            if character_note and character_note != "":
-                self.character = f"{self.character}\n- {character_note.strip()}"
-                await ui.on_agent_result("character development", character_note.strip())
-            await ui.on_phase_complete()
+            if "character_development" in self.agents:
+                character_note = await self.agents["character_development"].run(
+                    model_history, self.character, user_input, thoughts, reply
+                )
+                if character_note and character_note != "":
+                    self.character = f"{self.character}\n- {character_note.strip()}"
+                    await ui.on_agent_result("character development", character_note.strip())
+                await ui.on_phase_complete()
 
             self.session.touch()
             await ui.on_complete()
@@ -115,6 +118,8 @@ class Character:
             return None
 
     async def _maybe_compress_memory(self, ui: UIBridge) -> None:
+        if "memory" not in self.agents:
+            return
         if self._estimate_tokens(self.history) <= self.config.memory_token_threshold:
             return
 
