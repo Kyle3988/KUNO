@@ -9,7 +9,7 @@ from models import AgentModels, AgentSetting, ChatSession, LongTermMemory, Messa
 from presets import StartingPromptLoader
 
 if TYPE_CHECKING:
-    from UIBridge import UIBridge
+    from ui.UIBridge import UIBridge
 
 
 class Character:
@@ -132,7 +132,14 @@ class Character:
         source_indices = [
             index for index in range(cutoff) if index not in covered_indices
         ]
-        older_messages = [self.history[index] for index in source_indices]
+        if not source_indices:
+            return
+
+        # Summarize a small batch of older messages at a time so memory advances in
+        # chunks rather than reprocessing a single item on each trigger.
+        chunk_size = min(len(source_indices), max(1, min(6, self.config.recent_message_count)))
+        chunk_indices = source_indices[:chunk_size]
+        older_messages = [self.history[index] for index in chunk_indices]
         if not older_messages:
             return
 
@@ -142,7 +149,7 @@ class Character:
         if not summary or any(memory.content == summary for memory in self.memory):
             return
 
-        self.memory.append(LongTermMemory(summary, source_indices))
+        self.memory.append(LongTermMemory(summary, chunk_indices))
         await ui.on_agent_result("memory", summary)
         await ui.on_phase_complete()
 

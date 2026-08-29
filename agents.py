@@ -13,7 +13,6 @@ from models import AgentModels, Message
 
 StreamCallback = Callable[[str, str], Awaitable[None]]
 
-
 class Agent:
     phase: str = "agent"
 
@@ -46,7 +45,6 @@ class Agent:
         cleaned = re.sub(r"^\s*assistant\s*:?\s*", "", accumulated, count=1, flags=re.IGNORECASE)
         return cleaned.strip()
 
-
 async def available_models(client: Any | None = None) -> set[str]:
     if client is None:
         if ollama is None:
@@ -76,6 +74,32 @@ async def validate_models(models: AgentModels, client: Any | None = None) -> lis
         if setting.enabled and setting.model not in available:
             errors.append(f"{agent_name.replace('_', ' ').title()}: {setting.model}")
     return errors
+
+class CustomAgent(Agent):
+    def __init__(self, agent_name: str, system_prompt: str, model_name: str, client: Any | None = None):
+        self.phase = agent_name
+        self.system_prompt = system_prompt
+        super().__init__(model_name, client)
+
+    async def run(self, *sys_prompt_args: dict[str, str]) -> str:
+        prompt = self.__insert_system_prompt_arguments(self.system_prompt, *sys_prompt_args)
+        return await self.complete([
+            {"role": "system", "content": prompt},
+        ])
+
+    def _insert_system_prompt_arguments(self, system_prompt: str, *sys_prompt_args: dict[str, str]) -> str:
+        variables: dict[str, str] = {}
+        for arg in sys_prompt_args:
+            if isinstance(arg, dict):
+                variables.update({str(key): str(value) for key, value in arg.items()})
+
+        pattern = re.compile(r"\$\{\{\s*([A-Za-z0-9_]+)\s*\}\}")
+
+        def replace(match: re.Match[str]) -> str:
+            key = match.group(1)
+            return variables.get(key, match.group(0))
+
+        return pattern.sub(replace, system_prompt)
 
 
 class ThinkingAgent(Agent):
@@ -148,8 +172,9 @@ class CharacterDevelopmentAgent(Agent):
         reply: str,
     ) -> str:
         instruction = f"""
-You are a strict character-profile editor. Your output is private and will be appended to the
+You are a strict character-profile editor. Your output is private and will be appended to your played
 character profile only when you identify one genuinely NEW, PERMANENT fact.
+If you play multiple characters, make sure to specify WHICH character you are writing a fact for.
 
 A valid note must be one concise sentence describing a lasting:
 - personality trait, preference, relationship, backstory fact, motivation, or fear;

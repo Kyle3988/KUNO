@@ -39,7 +39,7 @@ DEFAULT_CONFIG = AppConfig(
     agent_models=AgentModels(
         thinking=AgentSetting(DEFAULT_THINKING_MODEL),
         speaking=AgentSetting(DEFAULT_SPEAKING_MODEL),
-        character_development=AgentSetting(DEFAULT_THINKING_MODEL),
-        memory=AgentSetting(DEFAULT_THINKING_MODEL),
+        character_development=AgentSetting(DEFAULT_THINKING_MODEL, False),
+        memory=AgentSetting(DEFAULT_THINKING_MODEL, False),
     )
 )
