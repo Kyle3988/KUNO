@@ -198,8 +198,7 @@ Output rules:
 2. Otherwise output exactly one short sentence, with no label, explanation, bullets, or markdown.
 """.strip()
         result = await self.complete(
-            _history_messages(history)
-            + [
+            [
                 {"role": "system", "content": instruction},
             ]
         )
