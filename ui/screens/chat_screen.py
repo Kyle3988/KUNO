@@ -79,7 +79,7 @@ class ChatScreen(Screen, UIBridge):
         super().__init__()
         mockSession = ChatSession(
             title="New chat",
-            character_prompt=f"**!!You are the User!!**.\nThe prompt for the AI you are talking to is the following:\n'{session.character_prompt}'\n**REMEMBER, YOU ARE THE USER IN THIS SCENARIO!**",
+            character_prompt=f"**!!You are the User!!**\n**YOU ARE THE USER IN THIS SCENARIO AND REACT AS THE USER. NOT THE AI!**",
             starting_prompt_name=session.starting_prompt_name,
             agent_models=session.agent_models,
         )

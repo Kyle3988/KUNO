@@ -22,9 +22,10 @@ class PromptSetupScreen(Screen):
     AGENT_FIELDS = (
         ("thinking", "Thinking model", False),
         ("speaking", "Speaking model", True),
-        ("character_development", "Character development model (WIP)", False),
+        ("character_development", "Character development model", False),
         ("memory", "Memory compression model (WIP)", False),
     )
+    talksToSelf = False
 
     def __init__(self, app_config: AppConfig):
         super().__init__()
@@ -86,6 +87,18 @@ class PromptSetupScreen(Screen):
                             placeholder="Ollama model name",
                             id=f"{field_name}-model",
                         )
+                # with Horizontal(id="talk-to-self"):
+                #     yield Button(
+                #         "Enabled" if self.talksToSelf else "Disabled",
+                #         id=f"talksToSelf-enabled",
+                #         classes=(
+                #             "agent-enabled-toggle is-enabled"
+                #             if self.talksToSelf
+                #             else "agent-enabled-toggle is-disabled"
+                #         ),),
+                #     yield Label(
+                #         f"Let AI respond to Character (first message required)"
+                #     )
         with Horizontal(id="prompt-actions"):
             yield Button("Save Prompt", variant="success", id="save-prompt", disabled=True)
             yield Button("Start Chat", variant="primary", id="start-chat")
@@ -243,8 +256,6 @@ class PromptNameModal(ModalScreen[str | None]):
         self.initial_name = initial_name
 
     def compose(self):
-        from textual import ComposeResult
-
         with Vertical(id="prompt-name-dialog"):
             yield Label("Save prompt")
             yield Input(value=self.initial_name, placeholder="Prompt name", id="prompt-name-input")

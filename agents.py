@@ -172,30 +172,43 @@ class CharacterDevelopmentAgent(Agent):
         reply: str,
     ) -> str:
         instruction = f"""
-You are a strict character-profile editor. Your output is private and will be appended to your played
-character profile only when you identify one genuinely NEW, PERMANENT fact.
-If you play multiple characters, make sure to specify WHICH character you are writing a fact for.
+This is the current context:
 
-A valid note must be one concise sentence describing a lasting:
-- personality trait, preference, relationship, backstory fact, motivation, or fear;
-- fact explicitly revealed by the user or established as durable in the spoken reply.
+---
 
-Do NOT record temporary emotions, scene actions, plans, opinions made only for this turn,
-ordinary conversation topics, or anything already present in the profile. Do NOT infer facts
-from the internal thoughts. Never copy, summarize, or quote the internal thoughts or spoken reply.
+the previous chats that were made between the AI and the user are as follows:
+{history}
 
-Existing character profile:
+The Existing character profile:
 {character_prompt}
 
-User message:
+Last User message:
 {user_input}
 
-Spoken reply (context only, never repeat):
+AI's thoughts:
+{thoughts}
+
+AI answered:
 {reply}
 
+---
+
+You are a strict character-profile editor. Your output is private and will be appended to the currently played
+character profile of the AI.
+If there are multiple characters played by the AI, make sure to specify WHICH character a fact is written for.
+Usually the Character currently involved is noted in the AI's thoughts under the section "[ANALYSIS] - Your Character:"
+
+A valid note should be one concise sentence about a character. This can be about:
+- personality trait, preference, relationship, backstory fact, motivation, or fear;
+- fact explicitly revealed by the user or established as durable in the AI's answer.
+
+Do NOT record traits of the User, or the Users character.
+Do NOT record temporary emotions, scene actions, plans, opinions made only for this turn,
+ordinary conversation topics, or anything already present in the profile. Never copy, summarize, or quote the internal thoughts or spoken reply.
+
 Output rules:
-1. If there is no clearly new permanent fact, output exactly: [no notes]
-2. Otherwise output exactly one short sentence, with no label, explanation, bullets, or markdown.
+1. If there is no clearly new permanent fact, say only [no notes] or append it at the end of your text.
+2. Otherwise output exactly one short sentence, with no label, explanation, bullets, or markdown for appending to the existing character profile.
 """.strip()
         result = await self.complete(
             [
@@ -210,7 +223,7 @@ Output rules:
             "none",
             "n/a",
         }
-        if normalized.lower() in no_note_values:
+        if normalized.lower() in no_note_values or "[no notes]" in normalized:
             return ""
         return normalized
 
