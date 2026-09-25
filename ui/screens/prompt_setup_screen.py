@@ -20,9 +20,9 @@ from textual.widgets import (
 
 class PromptSetupScreen(Screen):
     AGENT_FIELDS = (
-        ("thinking", "Thinking model", False),
+        ("thinking", "Context model", False),
         ("speaking", "Speaking model", True),
-        ("character_development", "Character development model", False),
+        ("character_development", "Character notes model", False),
         ("memory", "Memory compression model (WIP)", False),
     )
     talksToSelf = False
